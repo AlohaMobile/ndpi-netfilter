@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -383,9 +384,9 @@ static void ndpi_gc_flow(void)
 	union nf_inet_addr *ipdst;
 
         u64 t1;
-        struct timeval tv;
+        struct timespec64 tv;
 
-        do_gettimeofday(&tv);
+        ktime_get_ts64(&tv);
         t1 = (uint64_t) tv.tv_sec;
         
 	if (debug_dpi) pr_info ("xt_ndpi: call garbage collector.\n");
@@ -418,7 +419,7 @@ ndpi_process_packet(struct nf_conn * ct, const uint64_t time,
 
 	u8 exist_flow=0;
         u64 t1;
-        struct timeval tv;
+        struct timespec64 tv;
 
 	spin_lock_bh (&flow_lock);
         ipsrc = &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u3;
@@ -449,7 +450,7 @@ ndpi_process_packet(struct nf_conn * ct, const uint64_t time,
 		}
 	}
 
-        do_gettimeofday(&tv);
+        ktime_get_ts64(&tv);
         t1 = (uint64_t) tv.tv_sec;
 
         if (flow == NULL) {
@@ -602,7 +603,7 @@ ndpi_mt(const struct sk_buff *skb, struct xt_action_param *par)
 
 	enum ip_conntrack_info ctinfo;
 	struct nf_conn * ct;
-	struct timeval tv;
+	struct timespec64 tv;
 	struct sk_buff *linearized_skb = NULL;
 	const struct sk_buff *skb_use = NULL;
 
@@ -630,7 +631,7 @@ ndpi_mt(const struct sk_buff *skb, struct xt_action_param *par)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 	} else if (nf_ct_is_untracked(skb)){
 #else
-	} else if (nf_ct_is_untracked(ct)){
+	} else if (false){
 #endif
 		pr_info ("xt_ndpi: ignoring untracked sk_buff.\n");
 		return false;               
@@ -641,9 +642,10 @@ ndpi_mt(const struct sk_buff *skb, struct xt_action_param *par)
         ip = ip_hdr(skb_use);
         tcph = (const void *)ip + ip_hdrlen(skb_use);
 
-	do_gettimeofday(&tv);
+	ktime_get_ts64(&tv);
+
 	time = ((uint64_t) tv.tv_sec) * detection_tick_resolution +
-		tv.tv_usec / (1000000 / detection_tick_resolution);
+		tv.tv_nsec / (1000000000 / detection_tick_resolution);
 
 	/* reset for new packets and solve ct collisions */
 	if (ctinfo == IP_CT_NEW) {
@@ -722,7 +724,7 @@ ndpi_mt_check(const struct xt_mtchk_param *par)
 	NDPI_BITMASK_RESET(protocols_bitmask);
         ndpi_enable_protocols (info);
 
-	return nf_ct_l3proto_try_module_get (par->family);
+	return 0; // nf_ct_l3proto_try_module_get (par->family);
 }
 #endif
 
@@ -744,7 +746,7 @@ ndpi_mt_destroy (const struct xt_mtdtor_param *par)
 	const struct xt_ndpi_mtinfo *info = par->matchinfo;
 
         ndpi_disable_protocols (info);
-	nf_ct_l3proto_module_put (par->family);
+	// nf_ct_l3proto_module_put (par->family);
 }
 
 #endif

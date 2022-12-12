@@ -304,7 +304,7 @@ typedef struct ndpiatomic {
 
 struct hash_ip4p_node {
   struct hash_ip4p_node   *next,*prev;
-  time_t                  lchg;
+  time64_t                lchg;
   u_int16_t               port,count:12,flag:4;
   u_int32_t               ip;
   // + 12 bytes for ipv6

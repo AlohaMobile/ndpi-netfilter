@@ -459,9 +459,9 @@ void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_struct, st
 #ifndef __KERNEL__
             now = (u_int32_t)time(NULL);
 #else
-            struct timespec t;
-
-            getnstimeofday(&t);
+            struct timespec64 t;
+	    ktime_get_ts64(&t);
+            
             now = t.tv_sec;
 #endif
 
